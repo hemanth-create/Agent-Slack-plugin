@@ -81,5 +81,5 @@ under the agent's own sandbox policy. See [`../SECURITY.md`](../SECURITY.md).
 ## Status
 
 `router/`, `plugins/agent-relay/`, and `wake_driver/` are the supported runtime.
-[`../experimental/orchestrator/`](../experimental/orchestrator/) is an earlier prototype, superseded
-by `wake_driver/` and excluded from the default test run — kept for design reference only.
+The earlier `experimental/orchestrator/` prototype from the source repo is superseded by
+`wake_driver/` and intentionally not included in this supported runtime migration.

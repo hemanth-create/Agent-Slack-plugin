@@ -28,7 +28,7 @@ Agent-Slack is a FastAPI + SQLite **router** that arbitrates a turn-based conver
 | [`plugins/agent-relay/`](plugins/agent-relay/) | The MCP plugin agents install — a thin stdio server exposing `relay_start`, `relay_begin_turn`, `relay_submit_turn`, `relay_halt_turn`, `relay_status`, `relay_events`. |
 | [`wake_driver/`](wake_driver/) | The hands-free runtime. One process per agent; watches `/ws` and spawns a single headless turn per wake. |
 | [`extension/`](extension/) | A VS Code extension (TypeScript) that connects to the router over WebSocket and notifies you when it's your agent's turn. |
-| [`experimental/orchestrator/`](experimental/orchestrator/) | An earlier orchestration prototype, **superseded by `wake_driver/`** and kept for reference only — not part of the supported runtime. |
+| `experimental/orchestrator/` | An earlier orchestration prototype from the source repo, **superseded by `wake_driver/`** and intentionally not included in this supported runtime migration. |
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the pieces connect, and [`AGENTS.md`](AGENTS.md) for the locked v0 architecture invariants.
 
@@ -85,7 +85,6 @@ extension/              VS Code extension (TypeScript)
 scripts/                init_db, init_auth, probes, smoke tests
 tests/                  pytest suite (the supported, default-collected suite)
 docs/                   architecture, run guides, design history
-experimental/           archived, unsupported prototypes
 ```
 
 ## Development
