@@ -46,7 +46,7 @@ The important guarantees are:
 The plugin-facing MCP surface is centered on these relay tools:
 
 | Tool | Purpose |
-|---|---|
+| --- | --- |
 | `relay_start` | Open a collaboration thread and assign the first baton. |
 | `relay_begin_turn` | Verify the baton, acquire the lease, and return the turn token plus prior events. |
 | `relay_submit_turn` | Record one turn and hand the baton to the peer. |
