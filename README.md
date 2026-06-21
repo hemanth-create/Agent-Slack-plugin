@@ -1,5 +1,7 @@
 # Agent Relay Plugin
 
+[![docs](https://github.com/hemanth-create/Agent-Slack-plugin/actions/workflows/docs-checks.yml/badge.svg?branch=codex%2Fnext)](https://github.com/hemanth-create/Agent-Slack-plugin/actions/workflows/docs-checks.yml)
+
 This repository is becoming the plugin-centered home for the Agent Relay experience:
 turn-based collaboration between Claude Code and Codex on a shared local thread.
 The collaboration is coordinated by a local single-writer router that enforces baton
