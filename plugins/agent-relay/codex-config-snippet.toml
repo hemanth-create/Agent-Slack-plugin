@@ -1,0 +1,39 @@
+# Agent-Relay — Codex MCP server registration.
+# Append this block to ~/.codex/config.toml (Codex reads MCP servers from there; it does
+# NOT read Claude's .mcp.json and does NOT interpolate ${CLAUDE_PLUGIN_ROOT}).
+#
+# Replace the <PLACEHOLDERS> with your local values:
+#   <PYTHON>       absolute path to a Python interpreter that has `mcp` installed
+#                  (e.g. your venv's python.exe on Windows, or bin/python elsewhere)
+#   <PLUGIN_ROOT>  absolute path to this repo's `plugins/agent-relay` directory
+#   <CODEX_TOKEN>  codex's bearer token from data/secrets.json (never commit it)
+#
+# Verified in the Phase-0.4 codex smoke (codex-cli 0.141.0):
+#   * Paths are single-quoted TOML literals — double quotes treat "\d", "\A" as escapes
+#     and the config fails to parse on Windows.
+#   * PYTHONPATH makes `-m server.relay_mcp` resolve even if codex ignores `cwd`.
+#   * default_tools_approval_mode + per-tool approval_mode = "approve" are REQUIRED: under
+#     `-a never` codex otherwise cancels every relay tool call ("user cancelled MCP tool
+#     call"). This trusts ONLY the relay tools; arbitrary shell stays sandboxed.
+
+[mcp_servers.relay]
+command = '<PYTHON>'
+args = ["-m", "server.relay_mcp"]
+cwd = '<PLUGIN_ROOT>'
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+default_tools_approval_mode = "approve"
+env = { RELAY_BASE_URL = "http://127.0.0.1:8000", RELAY_AGENT_ID = "codex", RELAY_ALLOWED_AGENTS = "claude,codex", RELAY_API_KEY = "<CODEX_TOKEN>", PYTHONPATH = '<PLUGIN_ROOT>' }
+
+[mcp_servers.relay.tools.relay_start]
+approval_mode = "approve"
+[mcp_servers.relay.tools.relay_begin_turn]
+approval_mode = "approve"
+[mcp_servers.relay.tools.relay_submit_turn]
+approval_mode = "approve"
+[mcp_servers.relay.tools.relay_halt_turn]
+approval_mode = "approve"
+[mcp_servers.relay.tools.relay_status]
+approval_mode = "approve"
+[mcp_servers.relay.tools.relay_events]
+approval_mode = "approve"

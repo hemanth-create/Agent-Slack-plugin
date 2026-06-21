@@ -31,4 +31,9 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@v2.8.0
         with:
-          args: --verbose --no-progress --include-fragments "./**/*.md"
+          args: >-
+            --verbose
+            --no-progress
+            --include-fragments
+            --exclude "https://github.com/hemanth-create/Agent-Slack-plugin.*"
+            "./**/*.md"

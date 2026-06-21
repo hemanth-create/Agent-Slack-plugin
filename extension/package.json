@@ -1,0 +1,64 @@
+{
+  "name": "agent-slack-router",
+  "displayName": "Agent Slack Router",
+  "description": "Local relay router wake notifications for Claude and Codex.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:agentSlack.connect",
+    "onCommand:agentSlack.setRouterToken"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentSlack.connect",
+        "title": "Agent Slack: Connect Router"
+      },
+      {
+        "command": "agentSlack.setRouterToken",
+        "title": "Agent Slack: Set Router Token"
+      }
+    ],
+    "configuration": {
+      "title": "Agent Slack Router",
+      "properties": {
+        "agentSlack.routerUrl": {
+          "type": "string",
+          "default": "ws://127.0.0.1:8000",
+          "description": "Base WebSocket URL for the local router."
+        },
+        "agentSlack.agent": {
+          "type": "string",
+          "default": "codex",
+          "description": "Local agent label for display only; auth identity comes from the token."
+        },
+        "agentSlack.threadId": {
+          "type": "string",
+          "default": "",
+          "description": "Router thread id to watch for wake notifications."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.4.0"
+  }
+}

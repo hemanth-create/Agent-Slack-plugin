@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-slack"
+version = "0.1.0"
+description = "Local single-writer relay router for turn-based multi-agent AI collaboration (Claude + Codex)."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "hemanth-create" }]
+keywords = ["ai", "agents", "multi-agent", "relay", "fastapi", "mcp", "claude", "codex"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: FastAPI",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+dependencies = [
+    "fastapi==0.137.2",
+    "starlette==1.3.1",
+    "uvicorn[standard]==0.49.0",
+    "pydantic==2.13.4",
+    "websockets==16.0",
+    "plyer==2.1.0",
+    "python-dotenv==1.2.2",
+    "mcp==1.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff==0.15.18",
+    "pytest==9.1.0",
+    "pytest-asyncio==1.4.0",
+    "httpx==0.28.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/hemanth-create/Agent-Slack-plugin"
+Repository = "https://github.com/hemanth-create/Agent-Slack-plugin"
+
+[tool.setuptools.packages.find]
+include = ["router*", "wake_driver*"]
+
+[tool.pytest.ini_options]
+# Repo root resolves `router`/`tests`; plugin root resolves the plugin-local `server` package.
+# Default run collects only the supported suite; the archived orchestrator tests under
+# experimental/ are excluded (run them with `pytest experimental/orchestrator/tests`).
+pythonpath = [".", "plugins/agent-relay"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
