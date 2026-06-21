@@ -1,28 +1,31 @@
-# Ignore agent-specific context files
-GEMINI.md
-CLAUDE.md
-AGENTS.md
-.agents
-.codex
-.helpers
+# Runtime data — never committed (DB, secrets, local_config.json, WAL/SHM sidecars)
+/data/
 
-# Python environment
+# Python
+__pycache__/
+*.py[cod]
+.venv/
 venv/
+*.egg-info/
+extension/node_modules/
+extension/dist/
+
+# Test & tool caches
 .pytest_cache/
 .ruff_cache/
-__pycache__/
-*.pyc
+.mypy_cache/
+/tmp/
 
-# Local runtime data
-data/
-tmp/
-*.db
-*.db-journal
-*.db-wal
-secrets.json
+# Agent working artifacts & local dev tooling (not part of the product)
+/.cc/
+/.codex/
+/.helpers/
 
-# Node modules & build artifacts (VS Code Extension)
-node_modules/
-dist/
-out/
-*.vsix
+# Env / secrets
+.env
+*.secret
+
+# Internal design/planning history — kept locally, not part of the public repo
+/agent-slack/
+/docs/superpowers/
+/docs/probe-results.md

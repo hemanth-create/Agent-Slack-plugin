@@ -1,0 +1,9 @@
+{
+  "name": "agent-relay",
+  "version": "0.1.0",
+  "description": "Claude and Codex collaborate by alternating turns on a shared thread, arbitrated by the local single-writer relay router. Adds five relay_* MCP tools plus collaborate/continue skills.",
+  "author": {
+    "name": "Agent-Slack"
+  },
+  "keywords": ["mcp", "multi-agent", "collaboration", "relay"]
+}

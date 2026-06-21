@@ -1,106 +1,104 @@
-# Agent Relay Plugin
+# Agent-Slack
 
-[![docs](https://github.com/hemanth-create/Agent-Slack-plugin/actions/workflows/docs-checks.yml/badge.svg?branch=codex%2Fnext)](https://github.com/hemanth-create/Agent-Slack-plugin/actions/workflows/docs-checks.yml)
+[![CI](https://github.com/hemanth-create/Agent-Slack-plugin/actions/workflows/ci.yml/badge.svg)](https://github.com/hemanth-create/Agent-Slack-plugin/actions/workflows/ci.yml)
+[![docs](https://github.com/hemanth-create/Agent-Slack-plugin/actions/workflows/docs-checks.yml/badge.svg)](https://github.com/hemanth-create/Agent-Slack-plugin/actions/workflows/docs-checks.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-This repository is becoming the plugin-centered home for the Agent Relay experience:
-turn-based collaboration between Claude Code and Codex on a shared local thread.
-The collaboration is coordinated by a local single-writer router that enforces baton
-ownership, leases, idempotent turn submission, and optional wake support.
+**A local, single-writer relay that lets two AI coding agents (Claude Code + Codex) collaborate by taking turns on one shared thread — no cloud service, no shared-file race.**
 
-Current status: the working implementation still lives in the sibling `Agent-Slack`
-repository. This repo is being shaped into the cleaner standalone home for the
-plugin layer, packaging, and documentation.
+Think of it as a shared notebook with a single talking stick: only the agent holding the baton may write, then it hands the baton to the other. A small local router is the referee — it is the *only* writer, so two agents editing at once can never corrupt the conversation.
 
-## What This Repository Will Be
+---
 
-This repo is intended to own the plugin-facing experience:
+## What it is
 
-- plugin packaging and installation docs for Claude and Codex
-- the MCP server surface for relay operations
-- agent-facing collaboration skills and workflows
-- setup guidance for running the plugin against a local router
-- lightweight contributor context explaining how the plugin fits into the wider system
+Agent-Slack is a FastAPI + SQLite **router** that arbitrates a turn-based conversation between AI agents:
 
-Long-term, this repo is not intended to be:
+- **`data/router.db` (SQLite) is the sole source of truth.** Agents never write files directly; they submit structured turns over HTTP. `thread.md` / `state.json` are *generated projections*, never read for routing.
+- Every turn is accepted inside **one `BEGIN IMMEDIATE` transaction** that checks, in fixed order: auth → idempotency → status → baton → compose-lease → optimistic concurrency → append → baton hand-off. This makes concurrent writers safe and turns idempotent.
+- Agents reach the router through a tiny **MCP plugin** (`relay_*` tools), so Claude Code and Codex can drive it natively.
+- An optional **wake-driver** subscribes to the router's WebSocket and spawns one headless agent turn each time the baton lands on it — turning the manual relay into a hands-free loop.
 
-- the sole home of the router database or backend runtime
-- the full wake-driver and VS Code extension monorepo
-- a generic multi-agent orchestration platform beyond the relay use case
+## Architecture
 
-## How Collaboration Works
+| Component | What it is |
+|-----------|------------|
+| [`router/`](router/) | The FastAPI single-writer backend. Owns `data/router.db`, the accept transaction, leases, idempotency, projections, and the HTTP/WebSocket API. The authority. |
+| [`plugins/agent-relay/`](plugins/agent-relay/) | The MCP plugin agents install — a thin stdio server exposing `relay_start`, `relay_begin_turn`, `relay_submit_turn`, `relay_halt_turn`, `relay_status`, `relay_events`. |
+| [`wake_driver/`](wake_driver/) | The hands-free runtime. One process per agent; watches `/ws` and spawns a single headless turn per wake. |
+| [`extension/`](extension/) | A VS Code extension (TypeScript) that connects to the router over WebSocket and notifies you when it's your agent's turn. |
+| `experimental/orchestrator/` | An earlier orchestration prototype from the source repo, **superseded by `wake_driver/`** and intentionally not included in this supported runtime migration. |
 
-1. One agent starts a relay thread for a task.
-2. The current baton-holder claims the turn and receives an opaque turn token.
-3. That agent submits one idempotent turn and hands the baton to the peer.
-4. The peer is nudged by a human or an optional wake watcher.
-5. The loop continues until the thread reaches `done`, `blocked`, or `needs_human`.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the pieces connect, and [`AGENTS.md`](AGENTS.md) for the locked v0 architecture invariants.
 
-The important guarantees are:
+## Quick start
 
-- one local router is the single writer and source of truth
-- only one agent holds the active baton at a time
-- turn ownership is protected by leases
-- retries are safe through idempotent submission
-- halts and resumes happen atomically so the thread state stays coherent
+> **Run from a local, non-synced folder.** SQLite with WAL is unreliable on OneDrive/Dropbox/iCloud paths, and the router will refuse to start there by design.
 
-## Documented MCP Surface
+**1. Install** (Python 3.12+):
 
-The plugin-facing MCP surface is centered on these relay tools:
+```bash
+python -m venv venv
+# Windows: venv\Scripts\activate   •   macOS/Linux: source venv/bin/activate
+pip install -e ".[dev]"     # or: pip install -r requirements.txt
+```
 
-| Tool | Purpose |
-| --- | --- |
-| `relay_start` | Open a collaboration thread and assign the first baton. |
-| `relay_begin_turn` | Verify the baton, acquire the lease, and return the turn token plus prior events. |
-| `relay_submit_turn` | Record one turn and hand the baton to the peer. |
-| `relay_halt_turn` | Record a turn and atomically pause the thread for `needs_human` or `blocked`. |
-| `relay_status` | Read the routing state for a thread. |
-| `relay_events` | Read the event history for a thread. |
+**2. Initialize the database and local auth tokens:**
 
-These six tools reflect the current implementation surface, including
-`relay_halt_turn`.
+```bash
+python -m scripts.init_db
+python -m scripts.init_auth      # writes bearer tokens to data/secrets.json (gitignored)
+```
 
-## Architecture In Context
+**3. Run the router:**
 
-The plugin depends on a few companion runtime pieces:
+```bash
+python -m uvicorn router.api.app:app --host 127.0.0.1 --port 8000
+# health check:  GET http://127.0.0.1:8000/health
+```
 
-- a local FastAPI + SQLite router that arbitrates baton, lease, idempotency, and thread state
-- an optional per-agent wake driver that watches router events and nudges the next agent
-- an optional VS Code notification extension for human visibility
+**4. Connect the agents.** Install the relay MCP plugin in each agent so they get the `relay_*` tools — see [`plugins/agent-relay/README.md`](plugins/agent-relay/README.md) and [`docs/run-relay-plugin.md`](docs/run-relay-plugin.md). Then either drive turns manually or start the hands-free wake-driver (one process per agent):
 
-For now, those runtime pieces live in the sibling `Agent-Slack` repository.
-This repo is intended to become the plugin-centered home and primary entrypoint for
-the collaboration layer that sits on top of them.
+```bash
+# copy .env.example -> .env (or bank machine paths in data/local_config.json), then:
+WAKE_AGENT_ID=claude WAKE_THREAD_ID=demo python -m wake_driver.run
+WAKE_AGENT_ID=codex  WAKE_THREAD_ID=demo python -m wake_driver.run
+```
 
-## Current Status
+A full HTTP walkthrough (create thread, acquire lease, submit a turn, inspect projections) and the VS Code wake smoke are in [`docs/run-local.md`](docs/run-local.md).
 
-Today this repo is still a scaffold and documentation-first workspace.
+## Security model
 
-- the sibling `Agent-Slack` repo contains the working implementation
-- this README describes the intended extracted plugin product and its boundaries
-- setup and smoke-test instructions still come from the sibling repo until extraction is complete
+- **Local-only.** The router binds to loopback; there is no cloud broker. All state lives in `data/` on your machine.
+- **Bearer auth on every request** (HTTP and WebSocket). The acting agent is derived from its token, never self-asserted; WebSocket `Origin` is validated.
+- **Secrets never ship.** `data/` (tokens, DB, `local_config.json`) is gitignored; committed config files use placeholders only. See [`SECURITY.md`](SECURITY.md) to report a vulnerability.
+- **Agents stay sandboxed.** When run headless, only the `relay_*` tools are trusted — arbitrary shell stays under the agent's own sandbox policy.
 
-That distinction is intentional: this README should help readers understand where the
-plugin is headed without implying that the runtime already lives here.
+## Project layout
 
-## Near-Term Repository Shape
+```
+router/                 FastAPI single-writer backend (api/ config/ db/ projections/)
+plugins/agent-relay/    MCP plugin: relay_* tools + collaborate/continue skills
+wake_driver/            hands-free per-agent turn spawner
+extension/              VS Code extension (TypeScript)
+scripts/                init_db, init_auth, probes, smoke tests
+tests/                  pytest suite (the supported, default-collected suite)
+docs/                   architecture, run guides, design history
+```
 
-As the extraction continues, this repo is expected to grow into a focused plugin home
-with:
+## Development
 
-- plugin server code
-- agent skills and plugin manifests
-- plugin-specific tests
-- standalone install and usage docs
-- examples and smoke-test guidance
+```bash
+ruff check .            # lint (config in pyproject.toml)
+pytest                  # run the supported suite
+```
 
-## Getting Started Today
+> On a synced (OneDrive/Dropbox) checkout, point pytest at a non-synced temp dir so the
+> router's sync-root guard doesn't trip: `pytest --basetemp="$TMPDIR/agent-slack"`.
 
-If you want to run the system now, use the sibling `Agent-Slack` repository.
-That repo currently holds the working router, the relay plugin implementation, the
-wake-driver support, and the runtime documentation.
+Contributions welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md). Coding standards live in [`AGENTS.md`](AGENTS.md).
 
-Until the extraction is complete:
+## License
 
-- use `Agent-Slack` for setup and smoke-test instructions
-- use its plugin and runtime docs as the operational source of truth
-- expect this README to become the primary plugin entrypoint once the code is moved here
+[MIT](LICENSE) © 2026 hemanth-create

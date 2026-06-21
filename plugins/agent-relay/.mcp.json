@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "relay": {
+      "command": "C:\\dev\\Agent-Slack\\venv\\Scripts\\python.exe",
+      "args": ["-m", "server.relay_mcp"],
+      "cwd": "${CLAUDE_PLUGIN_ROOT}",
+      "env": {
+        "RELAY_BASE_URL": "http://127.0.0.1:8000",
+        "RELAY_AGENT_ID": "claude",
+        "RELAY_ALLOWED_AGENTS": "claude,codex",
+        "PYTHONPATH": "${CLAUDE_PLUGIN_ROOT}"
+      }
+    }
+  }
+}

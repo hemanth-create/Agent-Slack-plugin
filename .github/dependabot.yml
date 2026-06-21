@@ -11,3 +11,25 @@ updates:
       github-actions:
         patterns:
           - "*"
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      python:
+        patterns:
+          - "*"
+  - package-ecosystem: "npm"
+    directory: "/extension"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "extension"
+    groups:
+      extension:
+        patterns:
+          - "*"
